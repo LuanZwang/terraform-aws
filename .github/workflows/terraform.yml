@@ -28,19 +28,25 @@ jobs:
 
     steps:
       - name: "Checkout code"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: "Setup Terraform"
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: 1.8.3
 
       - name: "Configure AWS credentials"
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.aws-assume-role-arn }}
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ inputs.aws_region }}
+
+      - name: "Read Destroy Terraform Configuration"
+        id: read-destroy-config
+        run: |
+          DESTROY="$(jq -r '.${{ inputs.environment }}' ./infra/destroy_config.json)"
+          echo "destroy=$DESTROY" >> $GITHUB_OUTPUT
 
       - name: "Initialize Terraform"
         run: |
@@ -53,14 +59,23 @@ jobs:
       - name: "Validate Terraform configuration"
         run: terraform validate
 
+      - name: "Destroy Terraform Resources"
+        if: steps.read-destroy-config.outputs.destroy == 'true'
+        id: destroy-resources
+        run: cd infra &&
+          terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }} &&
+          terraform destroy -var-file="./envs/${{ inputs.environment }}/terraform.tfvars" -auto-approve
+          
       - name: "Plan Terraform"
+        if: steps.read-destroy-config.outputs.destroy != 'true'
         id: terraform-plan
         run: |
           cd infra &&
           terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }} &&
-          terraform plan -var-file="envs/${{ inputs.environment }}/terraform.tfvars" -out=${{ inputs.environment }}.plan
+          terraform plan -var-file="./envs/${{ inputs.environment }}/terraform.tfvars" -out=${{ inputs.environment }}.plan
 
       - name: "Apply Terraform"
+        if: steps.read-destroy-config.outputs.destroy != 'true'
         id: terraform-apply
         run: |
           cd infra &&
