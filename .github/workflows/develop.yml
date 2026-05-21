@@ -14,10 +14,8 @@ jobs:
     uses: ./.github/workflows/terraform.yml
     with:
       environment: "dev"
-      # aws_region: ${{ secrets.AWS_REGION }}
-      # aws-statefile-s3-bucket: ${{ secrets.AWS_STATEFILE_S3_BUCKET }}
-      # aws-lock-dynamodb-table: ${{ secrets.AWS_LOCK_DYNAMODB_TABLE }}
-      aws-assume-role-arn: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
       aws_region: "sa-east-1"
       aws-statefile-s3-bucket: "luanzwang-sa-east-1-terraform-statefile"
       aws-lock-dynamodb-table: "luanzwang-sa-east-1-terraform-lock"
+    secrets:
+      aws-assume-role-arn: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
