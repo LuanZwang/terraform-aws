@@ -59,7 +59,7 @@ jobs:
       - name: "Validate Terraform configuration"
         run: terraform validate
 
-      - name: "Read Destroy Terraform Resources"
+      - name: "Destroy Terraform Resources"
         if: steps.read-destroy-config.outputs.destroy == 'true'
         id: destroy-resources
         run: cd infra &&
